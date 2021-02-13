@@ -59,3 +59,23 @@ $Response = Invoke-RestMethod -Uri $URI -Headers $Headers
 
 Write-Host ("These are the records in the `"" + $datagroup + "`" data group...") -ForegroundColor Yellow
 $Response.records.name
+
+# Get Exchange Online SMTP IP ranges
+
+# Generate random number to insert into ClientRequestID
+$Random = Get-Random -Minimum 100000000000 -Maximum 999999999999
+
+# Define the URL to query. We'll get all Exchange-related data and exclude IPv6 addresses
+$ExchangeQueryURL = "https://endpoints.office.com/endpoints/Worldwide?ServiceAreas=Exchange&NoIPv6=true&ClientRequestId=b10c5ed1-bad1-445f-b386-$Random"
+
+# Create an array which includes the TCP ports we'll filter on
+$TCPPorts = @('25','587')
+
+# Get the data
+$ExchangeData = Invoke-RestMethod -Uri $ExchangeQueryURL -Method Get
+
+# Filter to just extract IP addresses
+$MailRelayIPs = ($ExchangeData | Where-Object {$TCPPorts -contains $_.tcpPorts} | Select ips).ips | Sort-Object
+
+Write-Host ("These are IP addresses associated with Exchange Online SMTP...") -ForegroundColor Yellow
+$MailRelayIPs
