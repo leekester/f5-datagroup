@@ -1,23 +1,21 @@
 ﻿# Set variables...
-$f5partition = "Production"
-$f5poolname = "Frontend_App_pool"
-$f5port = 8080
-$user = "myf5userid"
-$pass = "myf5password"
-$f5server = "myf5server.mydomain.local"
+$User = "<f5-username>"
+$Pass = "<f5-password>"
+$F5ManagementAddress = "<f5-management-ip-or-dns>"
+$DataGroup = "Exchange_Online_Nodes"
 
-# ======= NO CHANGES BELOW THIS LINE! =======
-$servername = $env:COMPUTERNAME
-
-# ====== AUTHORISATION SECTION ==========
+# Generate authentication token
 $pair = "$($user):$($pass)"
 $encodedCreds = [System.Convert]::ToBase64String([System.Text.Encoding]::ASCII.GetBytes($pair))
 $basicAuthValue = "Basic $encodedCreds"
 $Headers = @{
     Authorization = $basicAuthValue
-}
+    }
 
-# Uncomment this if you have untrusted certificates...
+# Use this section if your F5 management management interface doesn't use a trusted TLS cert.
+# If you use valid certificates - well done! You can comment out or delete this section...
+
+### START ignore invalid TLS certificate block ###
 
 if (-not ([System.Management.Automation.PSTypeName]'ServerCertificateValidationCallback').Type)
 {
@@ -53,6 +51,11 @@ $certCallback = @"
 [System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]::Tls12;
 [ServerCertificateValidationCallback]::Ignore()
 
+### END ignore invalid TLS certificate block ###
 
-# === CONNECT TO F5 API =========
-$reply = Invoke-RestMethod -Uri https://${f5server}/mgmt/tm/ltm/pool/~${f5partition}~${f5poolname}/members/~${f5partition}~${servername}:${f5port}/stats/?$select=serverside.curConns -Headers $Headers
+# Invoke request
+$URI = "https://$F5ManagementAddress/mgmt/tm/ltm/data-group/internal/$DataGroup"
+$Response = Invoke-RestMethod -Uri $URI -Headers $Headers
+
+Write-Host ("These are the records in the `"" + $datagroup + "`" data group...") -ForegroundColor Yellow
+$Response.records.name
